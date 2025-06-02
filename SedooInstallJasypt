@@ -1,0 +1,40 @@
+#!/bin/bash
+
+if [ "$UID" -ne "0" ]
+then
+  echo "Merci de lancer le script avec sudo"
+  exit 1
+fi 
+
+# variables
+BASICS_SCRIPT_MIN_VERSION="1"
+JASYPT_DIR=/opt/jasypt
+JASYPT_VERSION=1.9.3
+GLOBAL_BASHRC=/etc/bash.bashrc
+
+# vérifications
+wget -qO - https://raw.githubusercontent.com/sedoo/Ubuntu_24.04_Scripts/main/version-check.sh | bash -s basics $BASICS_SCRIPT_MIN_VERSION || exit 1
+
+# Placement dans le répertoire /tmp
+cd /tmp
+
+# Installation classique
+wget https://github.com/jasypt/jasypt/releases/download/jasypt-$JASYPT_VERSION/jasypt-$JASYPT_VERSION-dist.zip || exit 1
+unzip jasypt-$JASYPT_VERSION-dist || exit 1
+rm -rf $JASYPT_DIR
+mv jasypt-$JASYPT_VERSION/ $JASYPT_DIR
+chmod +x $JASYPT_DIR/bin/*.sh
+
+# Ajout .bashrc global
+echo "# jasypt" >> $GLOBAL_BASHRC
+echo "function jasyptencrypt () {" >> $GLOBAL_BASHRC
+echo "    $JASYPT_DIR/bin/encrypt.sh input=\$1 password=\$2" >> $GLOBAL_BASHRC
+echo "}" >> $GLOBAL_BASHRC
+echo "function jasyptdecrypt () {" >> $GLOBAL_BASHRC
+echo "    $JASYPT_DIR/bin/decrypt.sh input=\$1 password=\$2" >> $GLOBAL_BASHRC
+echo "}" >> $GLOBAL_BASHRC
+
+chown -R root:root /opt/jasypt/
+
+echo ""
+echo "*** Installation terminée ***"

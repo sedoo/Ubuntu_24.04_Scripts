@@ -1,0 +1,61 @@
+#!/bin/bash
+
+if [ "$UID" -ne "0" ]
+then
+  echo "Merci de lancer le script avec sudo"
+  exit 1
+fi 
+
+# variables
+BASICS_SCRIPT_MIN_VERSION="1"
+
+# vérifications
+wget -qO - https://raw.githubusercontent.com/sedoo/Ubuntu_24.04_Scripts/main/version-check.sh | bash -s basics $BASICS_SCRIPT_MIN_VERSION || exit 1
+
+# Placement dans le répertoire /tmp
+cd /tmp
+
+# Recherche de l'archive tgz
+wget https://www.giss.nasa.gov/tools/panoply/download/ -O panoply.html
+
+while read -r line;
+do
+    SUB='.tgz'
+    if [[ "$line" == *"$SUB"* ]]; then
+        TGZ_NAME="${line#*href=\"}"
+        TGZ_NAME=`echo $TGZ_NAME | cut -d '"' -f1`
+    fi
+done < panoply.html
+rm panoply.html
+
+# Installation classique
+wget https://www.giss.nasa.gov/tools/panoply/download/$TGZ_NAME
+tar -xzvf PanoplyJ*.tgz || exit 1
+
+rm -rf /opt/PanoplyJ
+mv PanoplyJ/ /opt/
+
+SHORTCUT_FOLDER=/usr/share/applications
+
+mkdir -p $SHORTCUT_FOLDER
+
+SHORTCUT_FILE=$SHORTCUT_FOLDER/panoply_sedoo.desktop
+
+rm -f $SHORTCUT_FILE
+
+touch $SHORTCUT_FILE
+echo "[Desktop Entry]" >> $SHORTCUT_FILE
+echo "Version=1.0" >> $SHORTCUT_FILE
+echo "Type=Application" >> $SHORTCUT_FILE
+echo "Name=Panoply" >> $SHORTCUT_FILE
+echo "Icon=logviewer" >> $SHORTCUT_FILE
+echo "Exec=/opt/PanoplyJ/panoply.sh %U" >> $SHORTCUT_FILE
+echo "Categories=Science;" >> $SHORTCUT_FILE
+echo "Terminal=false" >> $SHORTCUT_FILE
+echo "Comment=Lecteur NetCDF" >> $SHORTCUT_FILE
+echo "StartupWMClass=Panoply" >> $SHORTCUT_FILE
+
+chown -R root:root /opt/PanoplyJ/
+
+echo ""
+echo "*** Installation terminée ***"

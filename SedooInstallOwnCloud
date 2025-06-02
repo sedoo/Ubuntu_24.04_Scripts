@@ -1,0 +1,26 @@
+#!/bin/bash
+
+if [ "$UID" -ne "0" ]
+then
+  echo "Merci de lancer le script avec sudo"
+  exit 1
+fi 
+
+# variables
+BASICS_SCRIPT_MIN_VERSION="1"
+
+# vérifications
+wget -qO - https://raw.githubusercontent.com/sedoo/Ubuntu_24.04_Scripts/main/version-check.sh | bash -s basics $BASICS_SCRIPT_MIN_VERSION || exit 1
+
+# Ajout clé & dépot
+wget -nv https://download.owncloud.com/desktop/ownCloud/stable/latest/linux/Ubuntu_24.04/Release.key -O - | gpg --dearmor | tee /etc/apt/trusted.gpg.d/owncloud-client.gpg || exit 1
+
+echo 'deb https://download.owncloud.com/desktop/ownCloud/stable/latest/linux/Ubuntu_24.04/ /' | tee -a /etc/apt/sources.list.d/owncloud-client.list
+
+apt update
+
+# Installation
+apt install -y owncloud-client || exit 1
+
+echo ""
+echo "*** Installation terminée ***"

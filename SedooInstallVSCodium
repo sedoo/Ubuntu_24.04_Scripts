@@ -1,0 +1,41 @@
+#!/bin/bash
+
+if [ "$UID" -ne "0" ]
+then
+  echo "Merci de lancer le script avec sudo"
+  exit 1
+fi 
+
+# variables
+BASICS_SCRIPT_MIN_VERSION="1"
+
+# vérifications
+wget -qO - https://raw.githubusercontent.com/sedoo/Ubuntu_24.04_Scripts/main/version-check.sh | bash -s basics $BASICS_SCRIPT_MIN_VERSION || exit 1
+
+# Ajout clé & dépot
+wget -qO - https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg | gpg --dearmor | dd of=/usr/share/keyrings/vscodium-archive-keyring.gpg || exit 1
+
+echo 'deb [ signed-by=/usr/share/keyrings/vscodium-archive-keyring.gpg ] https://download.vscodium.com/debs vscodium main' | tee /etc/apt/sources.list.d/vscodium.list
+
+apt update
+
+# Installation
+apt install -y codium python3-nautilus || exit 1
+
+# Intégration
+wget -q -O /usr/share/nautilus-python/extensions/codium-nautilus.py https://raw.githubusercontent.com/sedoo/Ubuntu_24.04_Scripts/main/codium-nautilus.py || exit 1
+
+# Extensions
+# Pack FR
+sudo -u $SUDO_USER codium --install-extension MS-CEINTL.vscode-language-pack-fr || exit 1
+# Prettier
+sudo -u $SUDO_USER codium --install-extension esbenp.prettier-vscode || exit 1
+# Vetur
+sudo -u $SUDO_USER codium --install-extension octref.vetur || exit 1
+# Git History
+sudo -u $SUDO_USER codium --install-extension donjayamanne.githistory || exit 1
+# Git Graph
+sudo -u $SUDO_USER codium --install-extension mhutchie.git-graph || exit 1
+
+echo ""
+echo "*** Installation terminée ***"

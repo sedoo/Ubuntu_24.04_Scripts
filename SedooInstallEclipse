@@ -1,0 +1,60 @@
+#!/bin/bash
+
+if [ "$UID" -ne "0" ]
+then
+  echo "Merci de lancer le script avec sudo"
+  exit 1
+fi
+
+# variables
+BASICS_SCRIPT_MIN_VERSION="1"
+ECLIPSE_RELEASE="2025-03"
+
+# vérifications
+wget -qO - https://raw.githubusercontent.com/sedoo/Ubuntu_24.04_Scripts/main/version-check.sh | bash -s basics $BASICS_SCRIPT_MIN_VERSION || exit 1
+
+# Placement dans le répertoire /tmp
+cd /tmp
+
+# Installation classique
+wget https://mirror.ibcp.fr/pub/eclipse/technology/epp/downloads/release/$ECLIPSE_RELEASE/R/eclipse-java-$ECLIPSE_RELEASE-R-linux-gtk-x86_64.tar.gz || exit 1
+tar -xzvf eclipse-java-$ECLIPSE_RELEASE-R-linux-gtk-x86_64.tar.gz || exit 1
+rm -rf /opt/eclipse
+mv eclipse/ /opt/
+
+# Ajout lombok et configuration
+wget https://projectlombok.org/downloads/lombok.jar || exit 1
+
+SEDOO_ECLIPSE_DIR=/opt/eclipse/.sedooeclipse
+
+mkdir -p $SEDOO_ECLIPSE_DIR
+
+mv ./lombok.jar $SEDOO_ECLIPSE_DIR
+cp /opt/eclipse/eclipse.ini $SEDOO_ECLIPSE_DIR
+
+echo "-javaagent:$SEDOO_ECLIPSE_DIR/lombok.jar" >> $SEDOO_ECLIPSE_DIR/eclipse.ini
+
+SHORTCUT_FOLDER=/usr/share/applications
+
+mkdir -p $SHORTCUT_FOLDER
+
+SHORTCUT_FILE=$SHORTCUT_FOLDER/eclipse_sedoo.desktop
+
+rm -f $SHORTCUT_FILE
+
+touch $SHORTCUT_FILE
+echo "[Desktop Entry]" >> $SHORTCUT_FILE
+echo "Version=1.0" >> $SHORTCUT_FILE
+echo "Type=Application" >> $SHORTCUT_FILE
+echo "Name=Eclipse" >> $SHORTCUT_FILE
+echo "Icon=/opt/eclipse/icon.xpm" >> $SHORTCUT_FILE
+echo "Exec=/opt/eclipse/eclipse --launcher.ini $SEDOO_ECLIPSE_DIR/eclipse.ini %U" >> $SHORTCUT_FILE
+echo "Categories=Development;IDE;" >> $SHORTCUT_FILE
+echo "Terminal=false" >> $SHORTCUT_FILE
+echo "Comment=Eclipse IDE" >> $SHORTCUT_FILE
+echo "StartupWMClass=Eclipse" >> $SHORTCUT_FILE
+
+chown -R root:root /opt/eclipse/
+
+echo ""
+echo "*** Installation terminée ***"

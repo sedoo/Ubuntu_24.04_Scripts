@@ -1,0 +1,36 @@
+#!/bin/bash
+
+if [ "$UID" -ne "0" ]
+then
+  echo "Merci de lancer le script avec sudo"
+  exit 1
+fi 
+
+# variables
+BASICS_SCRIPT_MIN_VERSION="1"
+
+# vérifications
+wget -qO - https://raw.githubusercontent.com/sedoo/Ubuntu_24.04_Scripts/main/version-check.sh | bash -s basics $BASICS_SCRIPT_MIN_VERSION || exit 1
+
+# Ajout clé & dépot
+curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg --dearmor || exit 1
+
+echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-8.0.list
+
+apt update
+
+# Installation
+apt install -y mongodb-org || exit 1
+
+# Activation service
+systemctl daemon-reload || exit 1
+systemctl enable mongod || exit 1
+systemctl start mongod || exit 1
+
+sleep 10
+
+# Désactivation télémétrie
+mongosh --eval "disableTelemetry()"
+
+echo ""
+echo "*** Installation terminée ***"

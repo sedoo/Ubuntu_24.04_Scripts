@@ -1,0 +1,30 @@
+#!/bin/bash
+
+if [ "$UID" -ne "0" ]
+then
+  echo "Merci de lancer le script avec sudo"
+  exit 1
+fi 
+
+# variables
+BASICS_SCRIPT_MIN_VERSION="1"
+
+# vérifications
+wget -qO - https://raw.githubusercontent.com/sedoo/Ubuntu_24.04_Scripts/main/version-check.sh | bash -s basics $BASICS_SCRIPT_MIN_VERSION || exit 1
+
+# Ajout clé & dépot
+curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg || exit 1
+
+echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main"| tee /etc/apt/sources.list.d/brave-browser-release.list
+
+apt update
+
+# Installation
+apt install -y brave-browser || exit 1
+
+# Firefox par défaut
+SUDO_USER_HOME=$( getent passwd $SUDO_USER | cut -d: -f6 )
+echo "xdg-settings set default-web-browser firefox_firefox.desktop" >> $SUDO_USER_HOME/.profile || exit 1
+
+echo ""
+echo "*** Installation terminée ***"

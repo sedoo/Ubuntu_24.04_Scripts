@@ -1,0 +1,39 @@
+#!/bin/bash
+
+if [ "$UID" -ne "0" ]
+then
+  echo "Merci de lancer le script avec sudo"
+  exit 1
+fi 
+
+# variables
+BASICS_SCRIPT_MIN_VERSION="4"
+SPRINGCRYPTOCLI_DIR=/opt/spring-crypto-cli
+SPRINGCRYPTOCLI_JAR=spring-crypto-cli.jar
+GLOBAL_BASHRC=/etc/bash.bashrc
+
+# vérifications
+wget -qO - https://raw.githubusercontent.com/sedoo/Ubuntu_24.04_Scripts/main/version-check.sh | bash -s basics $BASICS_SCRIPT_MIN_VERSION || exit 1
+
+# Placement dans le répertoire /tmp
+cd /tmp
+
+# Installation classique
+wget -O $SPRINGCRYPTOCLI_JAR https://github.com/mptechnology/spring-crypto-cli/releases/download/1.1.0/spring-crypto-cli-1.1.0-jar-with-dependencies.jar || exit 1
+rm -rf $SPRINGCRYPTOCLI_DIR
+mkdir -p $SPRINGCRYPTOCLI_DIR
+mv $SPRINGCRYPTOCLI_JAR $SPRINGCRYPTOCLI_DIR
+
+# Ajout .bashrc global
+echo "# spring-crypto-cli" >> $GLOBAL_BASHRC
+echo "function springencrypt () {" >> $GLOBAL_BASHRC
+echo "    /usr/lib/jvm/java-17-openjdk-amd64/bin/java -jar $SPRINGCRYPTOCLI_DIR/$SPRINGCRYPTOCLI_JAR encrypt --message \"\$1\" --key \"\$2\"" >> $GLOBAL_BASHRC
+echo "}" >> $GLOBAL_BASHRC
+echo "function springdecrypt () {" >> $GLOBAL_BASHRC
+echo "    /usr/lib/jvm/java-17-openjdk-amd64/bin/java -jar $SPRINGCRYPTOCLI_DIR/$SPRINGCRYPTOCLI_JAR decrypt --message \"\$1\" --key \"\$2\"" >> $GLOBAL_BASHRC
+echo "}" >> $GLOBAL_BASHRC
+
+chown -R root:root $SPRINGCRYPTOCLI_DIR
+
+echo ""
+echo "*** Installation terminée ***"
