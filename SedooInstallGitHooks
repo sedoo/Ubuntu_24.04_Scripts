@@ -1,0 +1,20 @@
+#!/bin/bash
+
+if [ "$UID" -eq "0" ]
+then
+  echo "Merci de NE PAS lancer le script avec sudo"
+  exit 1
+fi 
+
+# Installation
+mkdir -p ~/.config/git/hooks
+wget --timeout=10 --tries=2 -O ~/.config/git/hooks/pre-commit https://ada.sedoo.fr/myprecious/git_hooks_pre-commit || {
+    echo ""
+    echo "Merci de lancer le script en présentiel au SEDOO"
+    exit 1
+}
+chmod +x ~/.config/git/hooks/pre-commit || exit 1
+git config --global core.hooksPath ~/.config/git/hooks || exit 1
+
+echo ""
+echo "Git hooks installés"
