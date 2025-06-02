@@ -7,7 +7,7 @@ then
 fi 
 
 # variables
-BASICS_SCRIPT_MIN_VERSION="4"
+BASICS_SCRIPT_MIN_VERSION="1"
 SPRINGCRYPTOCLI_DIR=/opt/spring-crypto-cli
 SPRINGCRYPTOCLI_JAR=spring-crypto-cli.jar
 GLOBAL_BASHRC=/etc/bash.bashrc
