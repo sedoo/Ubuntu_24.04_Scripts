@@ -1,0 +1,99 @@
+#!/bin/bash
+
+if [ "$UID" -ne "0" ]
+then
+  echo "Merci de lancer le script avec sudo"
+  exit 1
+fi 
+
+# variables
+SCRIPT_VERSION="1"
+SCRIPT_CONF_DIR=/etc/sedoo
+SCRIPT_CONF_FILE=$SCRIPT_CONF_DIR/basics
+
+# vérifications OS
+. /etc/lsb-release
+if [ "$DISTRIB_ID" != "Ubuntu" ]; then
+    echo "Vous devez utiliser Ubuntu pour ce script"
+    exit 1
+else
+    if [ "$DISTRIB_RELEASE" != "24.04" ]; then
+        echo "Vous devez utiliser Ubuntu 24.04 pour ce script"
+        exit 1
+    fi
+fi
+
+# vérifications script
+if [ -e "$SCRIPT_CONF_FILE" ] ; then
+    read -r SCRIPT_CONF_FILE_VERSION<$SCRIPT_CONF_FILE
+    if [ "$SCRIPT_CONF_FILE_VERSION" == "$SCRIPT_VERSION" ]; then
+        echo "Script déjà installé"
+        exit 0
+    else
+        echo "Une version différente du script est installée"
+        case $SCRIPT_CONF_FILE_VERSION in
+            *)
+                echo "Version installée inconnue"
+                exit 1
+                ;;
+        esac
+        exit 0
+    fi
+fi
+
+# mise à jour
+apt update || exit 1
+apt upgrade -y || exit 1
+snap refresh || exit 1
+
+# paquets de base
+apt install -y apt-transport-https arj btrfs-progs build-essential ca-certificates cabextract curl dconf-editor exfat-fuse exfatprogs flatpak gettext git git-flow gnome-control-center gnome-disk-utility gnome-shell-extension-manager gnome-software gnome-software-plugin-flatpak gnome-software-plugin-snap gnome-system-monitor gnome-tweaks gnupg gparted hfsplus hfsprogs hfsutils htop inxi keepassxc lbzip2 libfuse2 lunzip lzip maven mpack nano nautilus-admin ncdu neofetch net-tools nodejs npm openjdk-8-jdk openjdk-8-jre openjdk-11-jdk openjdk-11-jre openjdk-17-jdk openjdk-17-jre p7zip-full p7zip-rar pigz ppa-purge python3-pip rar rsync sharutils sqlite3 synaptic thunderbird tilix unace unrar unzip uudeview vim wget xfsdump xfsprogs xterm zfsutils-linux zip zstd || exit 1
+
+# polices microsoft
+echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | /usr/bin/debconf-set-selections
+apt install -y ttf-mscorefonts-installer || exit 1
+
+# suppression snap et deb zoom
+# le snap zoom est maintenu par un tiers (Oliver Grawert)
+# https://snapcraft.io/zoom-client
+snap remove --purge zoom-client
+# le paquet deb ne peut se mettre à jour
+# par sécurité on utilisera le flatpak officiel
+apt purge -y zoom
+
+# nettoyage
+apt purge -y apport apport-gtk apport-symptoms cheese popularity-contest ubuntu-report
+apt autoremove --purge -y
+apt clean -y
+# remplacé par gnome-software
+snap remove --purge snap-store
+
+# configuration flathub
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo || exit 1
+
+flatpak install -y --noninteractive flathub com.github.tchx84.Flatseal || exit 1
+
+# configuration gnome-software
+RUSER_UID=$(id -u $SUDO_USER)
+sudo -u $SUDO_USER DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${RUSER_UID}/bus" gsettings set org.gnome.software packaging-format-preference "['deb', 'flatpak', 'snap']" || exit 1
+killall gnome-software
+
+# nouveau document texte avec le clic droit
+SUDO_USER_HOME=$( getent passwd $SUDO_USER | cut -d: -f6 )
+touch $SUDO_USER_HOME/Modèles/Document\ texte.txt || exit 1
+
+# git hooks
+wget -qO - https://raw.githubusercontent.com/sedoo/Ubuntu_24.04_Scripts/main/SedooInstallGitHooks | sudo -u $SUDO_USER bash -s || exit 1
+
+# désactivation mise à niveau Ubuntu
+sed -i 's/^Prompt=lts$/Prompt=never/' /etc/update-manager/release-upgrades
+
+# choix de Java 11 par défaut
+update-java-alternatives -s java-1.11.0-openjdk-amd64
+
+# écriture version du script
+mkdir -p $SCRIPT_CONF_DIR || exit 1
+echo $SCRIPT_VERSION > $SCRIPT_CONF_FILE || exit 1
+
+echo ""
+echo "*** Installation terminée ***"
