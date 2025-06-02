@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ "$UID" -ne "0" ]
+then
+  echo "Merci de lancer le script avec sudo"
+  exit 1
+fi 
+
+line="WaylandEnable=false"
+sed -i "/^#$line/ c$line" /etc/gdm3/custom.conf || exit 1
+
+echo ""
+echo "*** Patch terminé ***"
+echo "*** Redémarrez le PC ***"
+echo ""

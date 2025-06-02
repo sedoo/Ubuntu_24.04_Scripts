@@ -1,0 +1,31 @@
+#! /bin/bash
+
+# Hash utilisant la clé comme expression de recherche (Regex) et la valeur
+# associée comme message d’erreur
+declare -A PATTERNS;
+PATTERNS['_un__mot__interdit']="mot interdit 1";
+PATTERNS['autre_mot_interdit']="mot interdit 2";
+
+# Déclare un tableau d’erreurs vide
+declare -a errors;
+
+# Boucle sur les noms de fichiers présents dans le `stage`/`index` et
+# vérifie que leur contenu contient les chaînes listées dans PATTERNS.
+# Filtre uniquement sur les fichiers ajoutés (A), copiés (C), modifiés (M).
+IFS=$'\n';
+for file in $(git diff --staged --name-only --diff-filter=ACM); do
+  for elem in ${!PATTERNS[*]} ; do
+    { git show :0:"$file" | grep -Eiq ${elem}; } || continue;
+    errors+=("${PATTERNS[${elem}]} dans le fichier ${file}");
+  done
+done
+
+# Affiche les erreurs dans la console.
+for error in "${errors[@]}"; do
+  echo -e "\033[1;31m ERREUR : ${error} \033[0m"
+done
+
+# S’il existe au moins une erreur, arrête la création du commit
+if [ ${#errors[@]} -ne 0 ]; then
+  exit 1
+fi
