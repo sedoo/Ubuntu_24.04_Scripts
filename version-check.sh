@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# vérifications OS
+. /etc/lsb-release
+if [ "$DISTRIB_ID" != "Ubuntu" ]; then
+    echo "Vous devez utiliser Ubuntu pour ce script"
+    exit -1
+else
+    if [ "$DISTRIB_RELEASE" != "24.04" ]; then
+        echo "Vous devez utiliser Ubuntu 24.04 pour ce script"
+        exit -1
+    fi
+fi
+
 # variables
 SCRIPT_MIN_VERSION=$2
 if [ "$UID" -ne "0" ] ; then
